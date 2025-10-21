@@ -25,8 +25,7 @@ fun WriteProtectScreen(
 ) {
 
     Surface(
-        modifier = Modifier.fillMaxSize(),
-        color = Color.Black
+        modifier = Modifier.fillMaxSize()
     ) {
         Column(
             modifier = Modifier
@@ -39,7 +38,6 @@ fun WriteProtectScreen(
             Text(
                 text = statusText,
                 fontSize = 20.sp,
-                color = Color.White,
                 modifier = Modifier.padding(16.dp)
             )
 
@@ -47,12 +45,12 @@ fun WriteProtectScreen(
             OutlinedTextField(
                 value = inputText,
                 onValueChange = onInputTextChanged,
-                label = { Text("Enter text to write", color = Color.White) },
+                label = { Text("Enter text to write") },
                 keyboardOptions = KeyboardOptions.Default.copy(imeAction = ImeAction.Done),
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(16.dp),
-                textStyle = LocalTextStyle.current.copy(color = Color.Yellow, fontSize = 18.sp),
+                textStyle = LocalTextStyle.current.copy(fontSize = 18.sp),
                 singleLine = false
             )
 
@@ -61,7 +59,6 @@ fun WriteProtectScreen(
             // Remaining 30-char blocks
             Text(
                 text = "Remaining 30-char blocks: $remainingBlocks",
-                color = Color.Cyan,
                 fontSize = 18.sp
             )
 
@@ -79,7 +76,6 @@ fun WriteProtectScreen(
                 )
                 Text(
                     text = "Lock tag after writing",
-                    color = Color.White,
                     fontSize = 18.sp,
                     modifier = Modifier.padding(start = 8.dp)
                 )

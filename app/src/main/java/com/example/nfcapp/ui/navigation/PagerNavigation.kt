@@ -8,7 +8,8 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import com.example.nfcapp.ui.ReadCopyScreen
 import com.example.nfcapp.ui.WriteProtectScreen
@@ -24,7 +25,7 @@ fun PagerNavigation(
     remainingBlocks: Int,
     lockTag: Boolean,
     onInputTextChanged: (String) -> Unit,
-    onLockTagChanged: (Boolean) -> Unit,
+    onLockTagChanged: (Boolean) -> Unit
 ) {
     val pagerState = rememberPagerState(pageCount = { 2 })
     val coroutineScope = rememberCoroutineScope()
