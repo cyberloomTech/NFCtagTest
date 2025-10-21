@@ -6,8 +6,9 @@ import android.content.IntentFilter
 import android.nfc.NdefMessage
 import android.nfc.NdefRecord
 import android.nfc.NfcAdapter
-import android.nfc.Tag
 import android.nfc.tech.Ndef
+import android.nfc.tech.NdefFormatable
+import android.nfc.Tag
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
@@ -15,6 +16,8 @@ import androidx.activity.compose.setContent
 import androidx.compose.runtime.*
 import com.example.nfcapp.ui.navigation.PagerNavigation
 import java.nio.charset.Charset
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.nfcapp.viewmodel.NFCViewModel
 
 class MainActivity : ComponentActivity() {
 
@@ -30,6 +33,9 @@ class MainActivity : ComponentActivity() {
     private val _inputText = mutableStateOf("")
     private val _remainingBlocks = mutableStateOf(0)
     private var lockTag by mutableStateOf(false)
+    private lateinit var pendingIntent: PendingIntent
+    private lateinit var intentFiltersArray: Array<IntentFilter>
+    private lateinit var techListsArray: Array<Array<String>>
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -40,8 +46,22 @@ class MainActivity : ComponentActivity() {
 //            finish()
 //            return
 //        }
+        pendingIntent = PendingIntent.getActivity(
+            this, 0,
+            Intent(this, javaClass).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP),
+            PendingIntent.FLAG_MUTABLE
+        )
+
+        val ndefDetected = IntentFilter(NfcAdapter.ACTION_TECH_DISCOVERED)
+        ndefDetected.addCategory(Intent.CATEGORY_DEFAULT)
+        intentFiltersArray = arrayOf(ndefDetected)
+        techListsArray = arrayOf(
+            arrayOf(Ndef::class.java.name),
+            arrayOf(NdefFormatable::class.java.name)
+        )
 
         setContent {
+            val viewModel: NFCViewModel = viewModel()
             PagerNavigation(
                 statusTextRead = _statusTextRead.value,
                 nfcText = _nfcText.value,
@@ -76,8 +96,9 @@ class MainActivity : ComponentActivity() {
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
-        val tag: Tag? = intent.getParcelableExtra(NfcAdapter.EXTRA_TAG)
-        if (tag != null) {
+        setIntent(intent)
+
+            val tag = intent.getParcelableExtra<android.nfc.Tag>(NfcAdapter.EXTRA_TAG)
             if (_inputText.value.isNotEmpty()) {
                 val success = writeNdefText(tag, _inputText.value, lockTag)
                 _statusTextWrite.value = if (success) {
@@ -86,15 +107,21 @@ class MainActivity : ComponentActivity() {
                     "Failed to write tag"
                 }
             } else {
-                val msgs = intent.getParcelableArrayExtra(NfcAdapter.EXTRA_NDEF_MESSAGES)
-                if (msgs != null) {
-                    val record = (msgs[0] as NdefMessage).records[0]
-                    val text = readTextFromNdefRecord(record)
-                    _nfcText.value = text
+                val tag = intent.getParcelableExtra<android.nfc.Tag>(NfcAdapter.EXTRA_TAG)
+                if (tag != null) {
+                    val ndef = Ndef.get(tag)
+                    ndef?.connect()
+                    val message = ndef?.cachedNdefMessage
+                    val records = message?.records
+                    if (records != null && records.isNotEmpty()) {
+                        val textRecord = String(records[0].payload, Charsets.UTF_8)
+                        NFCViewModel.sharedText.value = textRecord
+                    }
                     _statusTextRead.value = "Tag Read Successfully"
                 } else {
                     _statusTextRead.value = "No NDEF messages found"
                 }
+                    ndef?.close()
             }
         }
     }

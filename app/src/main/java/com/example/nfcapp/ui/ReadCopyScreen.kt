@@ -20,6 +20,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
+import com.example.nfcapp.viewmodel.NFCViewModel
 
 @Composable
 fun ReadCopyScreen(
@@ -27,7 +28,7 @@ fun ReadCopyScreen(
     nfcText: String,
     onNavigateToWrite: () -> Unit
 ) {
-
+    val nfcText by NFCViewModel.sharedText
     val context = LocalContext.current
     val haptic = LocalHapticFeedback.current
 
