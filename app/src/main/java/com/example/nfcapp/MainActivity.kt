@@ -96,9 +96,9 @@ class MainActivity : ComponentActivity() {
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
-        setIntent(intent)
 
-            val tag = intent.getParcelableExtra<android.nfc.Tag>(NfcAdapter.EXTRA_TAG)
+        val tag: Tag? = intent.getParcelableExtra(NfcAdapter.EXTRA_TAG)
+        if (tag != null) {
             if (_inputText.value.isNotEmpty()) {
                 val success = writeNdefText(tag, _inputText.value, lockTag)
                 _statusTextWrite.value = if (success) {
@@ -107,21 +107,15 @@ class MainActivity : ComponentActivity() {
                     "Failed to write tag"
                 }
             } else {
-                val tag = intent.getParcelableExtra<android.nfc.Tag>(NfcAdapter.EXTRA_TAG)
-                if (tag != null) {
-                    val ndef = Ndef.get(tag)
-                    ndef?.connect()
-                    val message = ndef?.cachedNdefMessage
-                    val records = message?.records
-                    if (records != null && records.isNotEmpty()) {
-                        val textRecord = String(records[0].payload, Charsets.UTF_8)
-                        NFCViewModel.sharedText.value = textRecord
-                    }
+                val msgs = intent.getParcelableArrayExtra(NfcAdapter.EXTRA_NDEF_MESSAGES)
+                if (msgs != null) {
+                    val record = (msgs[0] as NdefMessage).records[0]
+                    val text = readTextFromNdefRecord(record)
+                    NFCViewModel.sharedText.value = text
                     _statusTextRead.value = "Tag Read Successfully"
                 } else {
                     _statusTextRead.value = "No NDEF messages found"
                 }
-                    ndef?.close()
             }
         }
     }
