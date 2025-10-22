@@ -6,5 +6,8 @@ import androidx.lifecycle.ViewModel
 class NFCViewModel : ViewModel() {
     companion object {
         val sharedText = mutableStateOf("No tag scanned yet.")
+        val isWriteMode = mutableStateOf(false)
+        val textToWrite = mutableStateOf<String?>(null)
+        val lockTagAfterWrite = mutableStateOf(false)
     }
 }

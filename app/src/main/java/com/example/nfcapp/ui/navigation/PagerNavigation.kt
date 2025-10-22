@@ -23,6 +23,7 @@ fun PagerNavigation(
     statusTextWrite: String,
     inputText: String,
     remainingBlocks: Int,
+    writtenStrLength: Int,
     lockTag: Boolean,
     onInputTextChanged: (String) -> Unit,
     onLockTagChanged: (Boolean) -> Unit
@@ -54,6 +55,7 @@ fun PagerNavigation(
                     statusText = statusTextWrite,
                     inputText = inputText,
                     remainingBlocks = remainingBlocks,
+                    writtenStrLength = writtenStrLength,
                     lockTag = lockTag,
                     onInputTextChanged = onInputTextChanged,
                     onLockTagChanged = onLockTagChanged,

@@ -17,6 +17,7 @@ import androidx.compose.runtime.*
 import com.example.nfcapp.ui.navigation.PagerNavigation
 import java.nio.charset.Charset
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.nfcapp.util.NFCWriter
 import com.example.nfcapp.viewmodel.NFCViewModel
 
 class MainActivity : ComponentActivity() {
@@ -32,6 +33,7 @@ class MainActivity : ComponentActivity() {
     private val _statusTextWrite = mutableStateOf("Ready to write NFC tag")
     private val _inputText = mutableStateOf("")
     private val _remainingBlocks = mutableStateOf(0)
+    private val _writtenStrLength = mutableStateOf(0)
     private var lockTag by mutableStateOf(false)
     private lateinit var pendingIntent: PendingIntent
     private lateinit var intentFiltersArray: Array<IntentFilter>
@@ -68,9 +70,11 @@ class MainActivity : ComponentActivity() {
                 statusTextWrite = _statusTextWrite.value,
                 inputText = _inputText.value,
                 remainingBlocks = _remainingBlocks.value,
+                writtenStrLength = _writtenStrLength.value,
                 lockTag = lockTag,
                 onInputTextChanged = { newText ->
                     _inputText.value = newText
+                    _writtenStrLength.value = newText.length
                     _remainingBlocks.value = (maxCapacity - newText.length) / 30
                 },
                 onLockTagChanged = { lockTag = it }
@@ -96,29 +100,40 @@ class MainActivity : ComponentActivity() {
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
+        setIntent(intent)
 
-        val tag: Tag? = intent.getParcelableExtra(NfcAdapter.EXTRA_TAG)
+        val tag = intent.getParcelableExtra<android.nfc.Tag>(NfcAdapter.EXTRA_TAG)
         if (tag != null) {
-            if (_inputText.value.isNotEmpty()) {
-                val success = writeNdefText(tag, _inputText.value, lockTag)
-                _statusTextWrite.value = if (success) {
-                    if (lockTag) "Tag written & locked successfully" else "Tag written successfully"
-                } else {
-                    "Failed to write tag"
+            val ndef = Ndef.get(tag)
+
+            if (NFCViewModel.isWriteMode.value) {
+                // Write to NFC Tag
+                NFCViewModel.textToWrite.value?.let { text ->
+                    NFCWriter.writeNdefText(this, tag, text, NFCViewModel.lockTagAfterWrite.value)
                 }
             } else {
-                val msgs = intent.getParcelableArrayExtra(NfcAdapter.EXTRA_NDEF_MESSAGES)
-                if (msgs != null) {
-                    val record = (msgs[0] as NdefMessage).records[0]
-                    val text = readTextFromNdefRecord(record)
+                // Read from NFC Tag
+                ndef?.connect()
+                val message = ndef?.cachedNdefMessage
+                val records = message?.records
+                if (records != null && records.isNotEmpty()) {
+                    val payload = records[0].payload
+                    val textEncoding =
+                        if ((payload[0].toInt() and 128) == 0) Charsets.UTF_8 else Charsets.UTF_16
+                    val languageCodeLength = payload[0].toInt() and 63
+                    val text = String(
+                        payload,
+                        languageCodeLength + 1,
+                        payload.size - languageCodeLength - 1,
+                        textEncoding
+                    )
                     NFCViewModel.sharedText.value = text
-                    _statusTextRead.value = "Tag Read Successfully"
-                } else {
-                    _statusTextRead.value = "No NDEF messages found"
                 }
+                ndef?.close()
             }
         }
     }
+
 
     private fun writeNdefText(tag: Tag, text: String, lockTag: Boolean = false): Boolean {
         return try {
